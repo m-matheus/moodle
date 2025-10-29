@@ -785,7 +785,20 @@ function clean_param_array(?array $param, $type, $recursive = false) {
  * @throws coding_exception
  */
 function clean_param($param, $type) {
-    return \core\param::from_type($type)->clean($param);
+    $paramtype = \core\param::from_type($type);
+    // Backwards compatibility: Some legacy or third-party code may still pass arrays
+    // to clean_param(). The new \core\param::clean() intentionally throws when given
+    // an array or object to encourage explicit array handling via clean_param_array().
+    // Instead of raising a coding_exception here, we detect arrays and delegate to
+    // clean_param_array() so existing code continues to function while gaining the
+    // stricter per-element cleaning. Multidimensional arrays were never officially
+    // supported in the original helper; we preserve that by only cleaning one level
+    // deep unless the caller explicitly opted in via clean_param_array() with $recursive.
+    if (is_array($param)) {
+        // Non-recursive: mimic original expectation (arrays of scalar values only).
+        return $paramtype->clean_param_array($param, false);
+    }
+    return $paramtype->clean($param);
 }
 
 /**

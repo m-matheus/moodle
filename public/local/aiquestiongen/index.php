@@ -336,7 +336,37 @@ function generate_questions($courseid) {
     
     // Get submitted topic configurations
     $questioncounts = optional_param_array('questioncount', [], PARAM_INT);
-    $questiontypes = optional_param_array('questiontypes', [], PARAM_RAW);
+    // NOTE: 'questiontypes' is a multi-dimensional array (topicid => [types...]).
+    // optional_param_array() only cleans one level and internally calls clean_param() on
+    // each value. When a value is itself an array, clean_param() throws the coding_exception
+    // you observed: "clean() can not process arrays, please use clean_array() instead".
+    // We therefore fetch the raw POST data and manually sanitise each nested value.
+    $rawquestiontypes = $_POST['questiontypes'] ?? [];
+    if (!is_array($rawquestiontypes)) {
+        $rawquestiontypes = [];
+    }
+    
+    // Clean the question types array properly (multidimensional array)
+    $questiontypes = [];
+    if (!empty($rawquestiontypes)) {
+        foreach ($rawquestiontypes as $topicid => $types) {
+            if (!is_array($types)) {
+                continue; // Ignore malformed entries.
+            }
+            $cleanedtypes = [];
+            foreach ($types as $type) {
+                // Allow only alphabetic question type identifiers.
+                $cleanedtype = clean_param($type, PARAM_ALPHA);
+                if ($cleanedtype !== '' && in_array($cleanedtype, ['multichoice','truefalse','shortanswer','essay'], true)) {
+                    $cleanedtypes[] = $cleanedtype;
+                }
+            }
+            if ($cleanedtypes) {
+                // Ensure uniqueness and stable order.
+                $questiontypes[(int)$topicid] = array_values(array_unique($cleanedtypes));
+            }
+        }
+    }
     
     try {
         $aiservice = new \local_aiquestiongen\ai_service();

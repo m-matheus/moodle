@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_aiquestiongen';
-$plugin->version = 2025102400;
+$plugin->version = 2025102702;
 $plugin->requires = 2022112800; // Moodle 4.1.0
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = 'v1.0.0-alpha';
+$plugin->release = 'v1.0.1-alpha';

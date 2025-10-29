@@ -56,14 +56,34 @@ class question_bank_integration {
             return $category->id;
         }
         
-        // Create new category
+        // Get or create the top category for this context
+        $topcategory = $DB->get_record('question_categories', [
+            'contextid' => $contextid,
+            'parent' => 0
+        ]);
+        
+        if (!$topcategory) {
+            // Create top category if it doesn't exist
+            $topcategory = new \stdClass();
+            $topcategory->name = 'Top';
+            $topcategory->contextid = $contextid;
+            $topcategory->info = '';
+            $topcategory->infoformat = FORMAT_HTML;
+            $topcategory->stamp = make_unique_id_code();
+            $topcategory->parent = 0;
+            $topcategory->sortorder = 0;
+            
+            $topcategory->id = $DB->insert_record('question_categories', $topcategory);
+        }
+        
+        // Create new category as child of top category
         $newcategory = new \stdClass();
         $newcategory->name = $categoryname;
         $newcategory->contextid = $contextid;
         $newcategory->info = 'Categoria para questões geradas automaticamente pela IA';
         $newcategory->infoformat = FORMAT_HTML;
         $newcategory->stamp = make_unique_id_code();
-        $newcategory->parent = 0;
+        $newcategory->parent = $topcategory->id;
         $newcategory->sortorder = 999;
         
         return $DB->insert_record('question_categories', $newcategory);
